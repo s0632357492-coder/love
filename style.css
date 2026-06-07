@@ -1,0 +1,756 @@
+/* ============================================================
+   ROOT VARIABLES
+   กำหนดสีและค่าต่างๆ เป็น CSS Custom Properties
+   เพื่อให้เปลี่ยนธีมได้ง่าย และรองรับ RGB animation
+   ============================================================ */
+:root {
+  /* สีหลัก Neon Pink */
+  --neon-pink: #ff2d78;
+  --neon-pink-light: #ff6ba8;
+  --neon-pink-dark: #c2185b;
+
+  /* RGB cycling — ใช้กับ Scene 9 เป็นต้นไป */
+  --rgb-hue: 0deg;
+
+  /* พื้นหลัง */
+  --bg-color: #000000;
+
+  /* ขนาดฟอนต์ responsive */
+  --font-big: clamp(2.5rem, 8vw, 6rem);
+  --font-med: clamp(1.4rem, 4vw, 2.5rem);
+  --font-small: clamp(1rem, 2.5vw, 1.4rem);
+
+  /* ความโปร่งใส transition */
+  --fade-duration: 0.8s;
+}
+
+/* ============================================================
+   RESET & BASE
+   ล้างค่า margin/padding ทุก element
+   ตั้งค่า box-sizing และ font
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* ไม่ให้ scroll — fullscreen experience */
+  background: var(--bg-color);
+  font-family: 'Sarabun', sans-serif;
+  color: #fff;
+}
+
+/* ============================================================
+   CANVAS — particle background & flower canvas
+   ลอยอยู่ด้านหลังสุด (z-index ต่ำ)
+   ============================================================ */
+#particleCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none; /* ไม่รับ mouse event */
+}
+
+#flowerCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  /* transition opacity เมื่อฉากดอกไม้เริ่ม */
+  transition: opacity 1.5s ease;
+}
+
+#flowerCanvas.visible {
+  opacity: 1;
+}
+
+/* ============================================================
+   APP WRAPPER
+   container หลัก fixed เต็มหน้าจอ
+   ============================================================ */
+#app {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   BACKGROUND TRANSITION
+   class ที่ JS เพิ่มเพื่อเปลี่ยนพื้นหลังเป็นสีขาว
+   ใช้ gradient สวยงาม ไม่ตัดกัน
+   ============================================================ */
+body.bg-white {
+  background: radial-gradient(ellipse at center, #fff8f8 0%, #fff0f5 40%, #ffe0ec 100%);
+  transition: background 3s ease;
+}
+
+body.bg-transitioning {
+  animation: bgFadeToWhite 3s ease forwards;
+}
+
+@keyframes bgFadeToWhite {
+  0%   { background: #000000; }
+  30%  { background: #1a001a; }
+  60%  { background: #fff0f5; }
+  100% { background: radial-gradient(ellipse at center, #fff8f8 0%, #ffe0ec 100%); }
+}
+
+/* ============================================================
+   SCENE BASE
+   ทุก scene ใช้ flex centering และ fade transition
+   ============================================================ */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+
+  /* เริ่มต้น opacity: 1 แต่ถ้า .hidden จะ opacity: 0 */
+  opacity: 1;
+  transition: opacity var(--fade-duration) ease;
+}
+
+/* hidden state — ซ่อน scene */
+.scene.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* fade out animation */
+.scene.fade-out {
+  animation: fadeOut var(--fade-duration) ease forwards;
+}
+
+/* fade in animation */
+.scene.fade-in {
+  animation: fadeIn var(--fade-duration) ease forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; pointer-events: none; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   ROSE CONTAINER
+   ดอกกุหลาบ SVG ขนาดใหญ่กลางจอ
+   ============================================================ */
+.rose-container {
+  position: relative;
+  /* ขนาด responsive: 50% ของ viewport height หรือ 70vw สำหรับมือถือ */
+  width: clamp(180px, 50vh, 380px);
+  height: clamp(220px, 62vh, 480px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Animation หลัก: Float + Breathing */
+  animation:
+    roseFloat 4s ease-in-out infinite,
+    roseBreath 3s ease-in-out infinite,
+    roseSway 6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.rose-svg {
+  width: 100%;
+  height: 100%;
+  /* drop shadow = glow effect บนดอก */
+  filter: drop-shadow(0 0 18px rgba(255, 45, 120, 0.7))
+          drop-shadow(0 0 40px rgba(255, 45, 120, 0.35));
+  position: relative;
+  z-index: 2;
+}
+
+/* Animation ลอยขึ้นลงเบาๆ */
+@keyframes roseFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-18px); }
+}
+
+/* Animation หายใจ (scale ขยาย-หด) */
+@keyframes roseBreath {
+  0%, 100% { filter:
+    drop-shadow(0 0 18px rgba(255, 45, 120, 0.7))
+    drop-shadow(0 0 40px rgba(255, 45, 120, 0.35)); }
+  50%       { filter:
+    drop-shadow(0 0 28px rgba(255, 45, 120, 0.95))
+    drop-shadow(0 0 65px rgba(255, 45, 120, 0.55))
+    drop-shadow(0 0 90px rgba(255, 45, 120, 0.25)); }
+}
+
+/* Animation หมุนเล็กน้อย (sway ซ้ายขวา) */
+@keyframes roseSway {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%       { transform: translateY(-12px) rotate(-2deg); }
+  50%       { transform: translateY(-18px) rotate(0deg); }
+  75%       { transform: translateY(-8px) rotate(2deg); }
+}
+
+/* วงแสง Neon Pink รอบดอกกุหลาบ — ชั้นใน */
+.rose-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,45,120,0.25) 0%, transparent 70%);
+  animation: glowPulse 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* วงแสง Neon Pink — ชั้นนอก (ฟุ้งกว้าง) */
+.rose-glow-outer {
+  position: absolute;
+  inset: -50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,45,120,0.12) 0%, transparent 65%);
+  animation: glowPulse 3s ease-in-out infinite reverse;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Animation pulse แสง */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ============================================================
+   SCENE TEXT — ข้อความรอง (subtitle)
+   ============================================================ */
+.scene-text {
+  text-align: center;
+}
+
+.subtitle {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: var(--font-small);
+  color: var(--neon-pink-light);
+  letter-spacing: 0.3em;
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 25px var(--neon-pink);
+  animation: subtitleGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes subtitleGlow {
+  0%, 100% { text-shadow: 0 0 10px var(--neon-pink), 0 0 25px var(--neon-pink); }
+  50%       { text-shadow: 0 0 18px var(--neon-pink), 0 0 45px var(--neon-pink), 0 0 70px rgba(255,45,120,0.4); }
+}
+
+/* ============================================================
+   NEON BUTTON
+   ปุ่ม Neon Pink สวยงาม มี hover glow
+   ============================================================ */
+.neon-btn {
+  /* ลักษณะปุ่ม */
+  padding: clamp(0.7rem, 2vw, 1rem) clamp(1.8rem, 5vw, 3rem);
+  background: transparent;
+  border: 2px solid var(--neon-pink);
+  color: var(--neon-pink-light);
+  font-family: 'Sarabun', sans-serif;
+  font-size: var(--font-small);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  border-radius: 50px; /* pill shape */
+  cursor: pointer;
+
+  /* Shadow + Glow */
+  box-shadow:
+    0 0 10px rgba(255,45,120,0.5),
+    0 0 25px rgba(255,45,120,0.25),
+    inset 0 0 10px rgba(255,45,120,0.1);
+  text-shadow: 0 0 10px var(--neon-pink);
+
+  /* Transition smooth */
+  transition:
+    box-shadow 0.3s ease,
+    color 0.3s ease,
+    background 0.3s ease,
+    transform 0.2s ease;
+
+  /* เริ่มต้น fade in */
+  animation: btnAppear 0.6s ease 0.5s both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* แสงวิ่งบนปุ่ม (shimmer effect) */
+.neon-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -75%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 150, 180, 0.35) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.neon-btn:hover::before {
+  left: 150%; /* แสงวิ่งผ่านปุ่ม */
+}
+
+.neon-btn:hover {
+  background: rgba(255, 45, 120, 0.12);
+  color: #fff;
+  box-shadow:
+    0 0 20px rgba(255,45,120,0.8),
+    0 0 50px rgba(255,45,120,0.45),
+    0 0 80px rgba(255,45,120,0.2),
+    inset 0 0 20px rgba(255,45,120,0.15);
+  text-shadow:
+    0 0 10px #fff,
+    0 0 20px var(--neon-pink),
+    0 0 40px var(--neon-pink);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.neon-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* animation ปุ่มโผล่ขึ้น */
+@keyframes btnAppear {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* กลุ่มปุ่ม 2 ปุ่ม (scene 3) */
+.btn-group {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-group.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.btn-group.show {
+  opacity: 1;
+  pointer-events: all;
+  transition: opacity 0.5s ease;
+}
+
+/* ปุ่มเหนื่อย — สีชมพูเข้ม */
+.btn-tired {
+  border-color: #ff6b9d;
+  color: #ff9ec0;
+  box-shadow:
+    0 0 10px rgba(255,107,157,0.5),
+    0 0 25px rgba(255,107,157,0.2);
+  text-shadow: 0 0 8px #ff6b9d;
+}
+
+.btn-tired:hover {
+  background: rgba(255,107,157,0.12);
+  box-shadow:
+    0 0 20px rgba(255,107,157,0.8),
+    0 0 50px rgba(255,107,157,0.4);
+}
+
+/* ปุ่มไม่เหนื่อย — สีฟ้า-ม่วง */
+.btn-nottired {
+  border-color: #7b6bff;
+  color: #b0a8ff;
+  box-shadow:
+    0 0 10px rgba(123,107,255,0.5),
+    0 0 25px rgba(123,107,255,0.2);
+  text-shadow: 0 0 8px #7b6bff;
+}
+
+.btn-nottired:hover {
+  background: rgba(123,107,255,0.12);
+  box-shadow:
+    0 0 20px rgba(123,107,255,0.8),
+    0 0 50px rgba(123,107,255,0.4);
+}
+
+/* ============================================================
+   BIG TEXT — ข้อความขนาดใหญ่หลักของแต่ละ scene
+   ============================================================ */
+.big-text {
+  font-family: 'Playfair Display', serif;
+  font-size: var(--font-big);
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  text-shadow:
+    0 0 15px var(--neon-pink),
+    0 0 35px rgba(255,45,120,0.5);
+  line-height: 1.2;
+  padding: 1rem;
+  animation: textGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 15px var(--neon-pink), 0 0 35px rgba(255,45,120,0.5);
+  }
+  50% {
+    text-shadow:
+      0 0 25px var(--neon-pink),
+      0 0 60px rgba(255,45,120,0.7),
+      0 0 100px rgba(255,45,120,0.3);
+  }
+}
+
+/* ข้อความ "แกล้งเล่น" (scene 6) */
+.teasing {
+  color: #ffcc00;
+  text-shadow:
+    0 0 15px #ffcc00,
+    0 0 35px rgba(255,200,0,0.5);
+  animation: teasingBounce 0.4s ease infinite alternate;
+}
+
+@keyframes teasingBounce {
+  from { transform: scale(1) rotate(-1deg); }
+  to   { transform: scale(1.05) rotate(1deg); }
+}
+
+/* ============================================================
+   EMOJI REACTION — ":<" และ ":>"
+   ปรากฏพร้อม bounce animation
+   ============================================================ */
+.emoji-reaction {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(4rem, 15vw, 9rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow:
+    0 0 20px var(--neon-pink),
+    0 0 50px rgba(255,45,120,0.6);
+  animation: reactionBounce 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* bounce animation สำหรับ reaction */
+@keyframes reactionBounce {
+  0%   { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+  40%  { transform: scale(1.25) rotate(3deg); opacity: 1; }
+  60%  { transform: scale(0.9) rotate(-2deg); }
+  80%  { transform: scale(1.1) rotate(1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* ============================================================
+   CINEMATIC DOTS — scene 7
+   จุดปรากฏทีละตัวแบบ cinematic
+   ============================================================ */
+.cinematic-dots {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 10vw, 6rem);
+  color: rgba(255,255,255,0.9);
+  text-shadow:
+    0 0 20px rgba(255,255,255,0.5),
+    0 0 50px rgba(255,45,120,0.4);
+  letter-spacing: 0.5em;
+  animation: dotsFloat 2s ease-in-out infinite;
+}
+
+@keyframes dotsFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50%       { transform: translateY(-8px); opacity: 1; }
+}
+
+/* ============================================================
+   ENDING MESSAGE — ข้อความความรัก scene 11
+   ============================================================ */
+.ending-message {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 700;
+  text-align: center;
+  color: var(--neon-pink);
+  text-shadow:
+    0 0 20px var(--neon-pink),
+    0 0 50px rgba(255,45,120,0.6);
+  padding: 1.5rem 2rem;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  position: relative;
+  z-index: 20;
+  animation: msgGlow 2s ease-in-out infinite;
+  transition: opacity 0.6s ease;
+}
+
+/* เมื่อพื้นขาว ข้อความเปลี่ยนสีไป RGB */
+body.bg-white .ending-message {
+  animation: rgbText 3s linear infinite, msgGlow 2s ease-in-out infinite;
+}
+
+@keyframes msgGlow {
+  0%, 100% { text-shadow: 0 0 20px currentColor, 0 0 50px rgba(255,45,120,0.6); }
+  50%       { text-shadow: 0 0 35px currentColor, 0 0 80px rgba(255,45,120,0.8), 0 0 120px rgba(255,45,120,0.3); }
+}
+
+/* RGB cycling animation สำหรับข้อความ */
+@keyframes rgbText {
+  0%   { color: #ff2d78; }
+  16%  { color: #ff6b00; }
+  33%  { color: #f0e000; }
+  50%  { color: #00e87a; }
+  66%  { color: #00cfff; }
+  83%  { color: #9b5bff; }
+  100% { color: #ff2d78; }
+}
+
+/* ============================================================
+   FINAL ENDING — scene 12
+   "รักตลอดไป" + สัตว์เลี้ยง
+   ============================================================ */
+.final-ending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 20;
+}
+
+.final-ending.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.final-ending.show {
+  opacity: 1;
+  animation: fadeIn 1s ease forwards;
+}
+
+.final-text {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 9vw, 6.5rem);
+  font-weight: 700;
+  text-align: center;
+  animation: rgbText 3s linear infinite;
+  text-shadow: 0 0 30px currentColor, 0 0 70px currentColor;
+}
+
+/* ไอคอนแมว-หมา */
+.pet-icons {
+  display: flex;
+  gap: 2rem;
+  margin-top: 0.5rem;
+}
+
+.pet-icon {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  display: inline-block;
+  filter: drop-shadow(0 0 15px currentColor);
+  animation: petBounce 1.2s ease-in-out infinite;
+}
+
+.pet-icon.cat {
+  animation-delay: 0s;
+}
+
+.pet-icon.dog {
+  animation-delay: 0.4s;
+}
+
+@keyframes petBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30%       { transform: translateY(-12px) scale(1.1); }
+  60%       { transform: translateY(-5px) scale(1.05); }
+}
+
+/* ============================================================
+   HEART FINAL — ❤️ สุดท้าย
+   ============================================================ */
+.heart-final {
+  font-size: clamp(5rem, 15vw, 10rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 20;
+  animation:
+    heartbeat 1.2s ease-in-out infinite,
+    heartGlow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(255,45,120,0.9));
+}
+
+.heart-final.hidden {
+  display: none;
+}
+
+.heart-final.show {
+  display: flex;
+  animation:
+    fadeIn 0.8s ease forwards,
+    heartbeat 1.2s ease-in-out 0.8s infinite,
+    heartGlow 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15%       { transform: scale(1.15); }
+  30%       { transform: scale(1); }
+  45%       { transform: scale(1.1); }
+  60%       { transform: scale(1); }
+}
+
+@keyframes heartGlow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(255,45,120,0.9)); }
+  50%       { filter: drop-shadow(0 0 40px rgba(255,45,120,1)) drop-shadow(0 0 80px rgba(255,45,120,0.6)); }
+}
+
+/* ============================================================
+   RGB GLOW NEON — เมื่อพื้นหลังเป็นสีขาว (scene 9+)
+   ============================================================ */
+body.bg-white .neon-btn,
+body.bg-white .rose-glow,
+body.bg-white .rose-glow-outer {
+  animation: rgbBorderGlow 3s linear infinite;
+}
+
+@keyframes rgbBorderGlow {
+  0%   { border-color: #ff2d78; box-shadow: 0 0 20px #ff2d78, 0 0 50px rgba(255,45,120,0.4); color: #ff2d78; }
+  16%  { border-color: #ff6b00; box-shadow: 0 0 20px #ff6b00, 0 0 50px rgba(255,107,0,0.4);  color: #ff6b00; }
+  33%  { border-color: #f0e000; box-shadow: 0 0 20px #f0e000, 0 0 50px rgba(240,224,0,0.4);  color: #f0e000; }
+  50%  { border-color: #00e87a; box-shadow: 0 0 20px #00e87a, 0 0 50px rgba(0,232,122,0.4);  color: #00e87a; }
+  66%  { border-color: #00cfff; box-shadow: 0 0 20px #00cfff, 0 0 50px rgba(0,207,255,0.4);  color: #00cfff; }
+  83%  { border-color: #9b5bff; box-shadow: 0 0 20px #9b5bff, 0 0 50px rgba(155,91,255,0.4); color: #9b5bff; }
+  100% { border-color: #ff2d78; box-shadow: 0 0 20px #ff2d78, 0 0 50px rgba(255,45,120,0.4); color: #ff2d78; }
+}
+
+body.bg-white .rose-svg {
+  animation: rgbRoseGlow 3s linear infinite;
+}
+
+@keyframes rgbRoseGlow {
+  0%   { filter: drop-shadow(0 0 25px #ff2d78) drop-shadow(0 0 60px rgba(255,45,120,0.5)); }
+  33%  { filter: drop-shadow(0 0 25px #00cfff) drop-shadow(0 0 60px rgba(0,207,255,0.5)); }
+  66%  { filter: drop-shadow(0 0 25px #9b5bff) drop-shadow(0 0 60px rgba(155,91,255,0.5)); }
+  100% { filter: drop-shadow(0 0 25px #ff2d78) drop-shadow(0 0 60px rgba(255,45,120,0.5)); }
+}
+
+/* ============================================================
+   TYPEWRITER CURSOR
+   กระพริบหลังข้อความ typewriter effect
+   ============================================================ */
+.cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1em;
+  background: var(--neon-pink);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: blink 0.8s step-end infinite;
+  box-shadow: 0 0 8px var(--neon-pink);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ============================================================
+   GLASS CARD EFFECT (optional wrapper)
+   ใช้ backdrop-filter blur สร้าง glassmorphism
+   ============================================================ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ============================================================
+   SCENE 1 — Fade In ตอนเปิดเว็บ
+   ============================================================ */
+#scene1 {
+  animation: scene1Enter 1.2s ease forwards;
+}
+
+@keyframes scene1Enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile & Tablet
+   ============================================================ */
+@media (max-width: 600px) {
+  .rose-container {
+    width: min(75vw, 260px);
+    height: min(92vw, 320px);
+  }
+
+  .btn-group {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1.5rem;
+  }
+
+  .neon-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pet-icons {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .rose-container {
+    width: 70vw;
+    height: 85vw;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION — สำหรับผู้ใช้ที่ไวต่อ animation
+   ลด animation ลงแต่ยังคง experience
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .rose-container,
+  .rose-svg,
+  .rose-glow,
+  .rose-glow-outer {
+    animation: none;
+  }
+
+  .big-text,
+  .subtitle {
+    animation: none;
+    text-shadow: 0 0 10px var(--neon-pink);
+  }
+}

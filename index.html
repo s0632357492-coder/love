@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <!-- ==========================================
+       META & CHARSET
+       กำหนดชุดตัวอักษร UTF-8 เพื่อรองรับภาษาไทย
+       ========================================== -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>❤️ สำหรับเธอ</title>
+
+  <!-- ==========================================
+       GOOGLE FONTS
+       โหลดฟอนต์ Playfair Display สำหรับหัวข้อ (ดูหรูหรา)
+       และ Sarabun สำหรับข้อความภาษาไทย (อ่านง่าย)
+       preconnect ช่วยเพิ่มความเร็วในการโหลด
+       ========================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <!-- ==========================================
+       STYLESHEET
+       เชื่อมโยงไฟล์ CSS หลัก
+       ========================================== -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ==========================================
+       CANVAS: PARTICLE BACKGROUND
+       ใช้ <canvas> วาด particle ลอยอยู่เบื้องหลัง
+       ตลอดทุกฉาก เพื่อเพิ่มความลึกและบรรยากาศ
+       ========================================== -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- ==========================================
+       CANVAS: FLOWERS (ฉากสุดท้าย)
+       canvas แยกสำหรับวาดดอกไม้จำนวนมาก
+       แบบ procedural SVG บน canvas
+       ========================================== -->
+  <canvas id="flowerCanvas"></canvas>
+
+  <!-- ==========================================
+       SCENE CONTAINER
+       wrapper หลักของทุกฉาก
+       ใช้ position: fixed เต็มหน้าจอ
+       ========================================== -->
+  <div id="app">
+
+    <!-- ==========================================
+         SCENE 1: หน้าแรก — ดอกกุหลาบ + ปุ่มรับดอกไม้
+         แสดงดอกกุหลาบ SVG ขนาดใหญ่กลางจอ
+         ========================================== -->
+    <div class="scene" id="scene1">
+      <!-- ดอกกุหลาบ SVG ขนาดใหญ่ — วาดด้วย SVG paths -->
+      <div class="rose-container" id="mainRose">
+        <svg class="rose-svg" viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">
+          <!-- ก้านดอกกุหลาบ -->
+          <path class="stem" d="M150 310 Q130 340 120 370" stroke="#2d6a2d" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path class="stem" d="M150 310 Q170 340 178 370" stroke="#2d6a2d" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- ใบ ซ้าย -->
+          <ellipse class="leaf" cx="120" cy="340" rx="18" ry="10" fill="#3a8a3a" transform="rotate(-40 120 340)"/>
+          <!-- ใบ ขวา -->
+          <ellipse class="leaf" cx="178" cy="340" rx="18" ry="10" fill="#3a8a3a" transform="rotate(40 178 340)"/>
+
+          <!-- กลีบชั้นนอกสุด (base petals) -->
+          <ellipse class="petal petal-outer" cx="150" cy="220" rx="55" ry="75" fill="url(#petalGrad1)" opacity="0.9"/>
+          <ellipse class="petal petal-outer" cx="100" cy="235" rx="50" ry="68" fill="url(#petalGrad2)" opacity="0.85" transform="rotate(-35 100 235)"/>
+          <ellipse class="petal petal-outer" cx="200" cy="235" rx="50" ry="68" fill="url(#petalGrad3)" opacity="0.85" transform="rotate(35 200 235)"/>
+          <ellipse class="petal petal-outer" cx="80"  cy="195" rx="45" ry="62" fill="url(#petalGrad2)" opacity="0.8"  transform="rotate(-60 80 195)"/>
+          <ellipse class="petal petal-outer" cx="220" cy="195" rx="45" ry="62" fill="url(#petalGrad3)" opacity="0.8"  transform="rotate(60 220 195)"/>
+
+          <!-- กลีบชั้นกลาง -->
+          <ellipse class="petal petal-mid" cx="150" cy="190" rx="45" ry="62" fill="url(#petalGrad4)" opacity="0.92"/>
+          <ellipse class="petal petal-mid" cx="112" cy="200" rx="40" ry="56" fill="url(#petalGrad5)" opacity="0.88" transform="rotate(-30 112 200)"/>
+          <ellipse class="petal petal-mid" cx="188" cy="200" rx="40" ry="56" fill="url(#petalGrad5)" opacity="0.88" transform="rotate(30 188 200)"/>
+          <ellipse class="petal petal-mid" cx="95"  cy="175" rx="38" ry="52" fill="url(#petalGrad4)" opacity="0.85" transform="rotate(-55 95 175)"/>
+          <ellipse class="petal petal-mid" cx="205" cy="175" rx="38" ry="52" fill="url(#petalGrad4)" opacity="0.85" transform="rotate(55 205 175)"/>
+
+          <!-- กลีบชั้นใน -->
+          <ellipse class="petal petal-inner" cx="150" cy="165" rx="34" ry="48" fill="url(#petalGrad6)" opacity="0.95"/>
+          <ellipse class="petal petal-inner" cx="122" cy="170" rx="30" ry="42" fill="url(#petalGrad7)" opacity="0.9"  transform="rotate(-25 122 170)"/>
+          <ellipse class="petal petal-inner" cx="178" cy="170" rx="30" ry="42" fill="url(#petalGrad7)" opacity="0.9"  transform="rotate(25 178 170)"/>
+          <ellipse class="petal petal-inner" cx="108" cy="152" rx="28" ry="38" fill="url(#petalGrad6)" opacity="0.88" transform="rotate(-48 108 152)"/>
+          <ellipse class="petal petal-inner" cx="192" cy="152" rx="28" ry="38" fill="url(#petalGrad6)" opacity="0.88" transform="rotate(48 192 152)"/>
+
+          <!-- หัวใจดอก (core) -->
+          <ellipse class="petal petal-core" cx="150" cy="145" rx="22" ry="30" fill="url(#petalGradCore)" opacity="1"/>
+          <ellipse class="petal petal-core" cx="138" cy="148" rx="16" ry="22" fill="url(#petalGradCore2)" opacity="0.9" transform="rotate(-18 138 148)"/>
+          <ellipse class="petal petal-core" cx="162" cy="148" rx="16" ry="22" fill="url(#petalGradCore2)" opacity="0.9" transform="rotate(18 162 148)"/>
+
+          <!-- แสงสะท้อนบนกลีบ (highlight) — ทำให้ดูมีมิติ -->
+          <ellipse class="highlight" cx="135" cy="148" rx="8" ry="14" fill="white" opacity="0.22" transform="rotate(-10 135 148)"/>
+          <ellipse class="highlight" cx="155" cy="190" rx="6" ry="10" fill="white" opacity="0.16" transform="rotate(5 155 190)"/>
+          <ellipse class="highlight" cx="118" cy="200" rx="5" ry="9" fill="white" opacity="0.14" transform="rotate(-25 118 200)"/>
+
+          <!-- Gradient Definitions — ไล่สีกลีบดอกกุหลาบ -->
+          <defs>
+            <!-- ไล่สีชมพูเข้มไปชมพูอ่อน -->
+            <radialGradient id="petalGrad1" cx="50%" cy="40%" r="60%">
+              <stop offset="0%"   stop-color="#ff6b9d"/>
+              <stop offset="50%"  stop-color="#e91e8c"/>
+              <stop offset="100%" stop-color="#c2185b"/>
+            </radialGradient>
+            <radialGradient id="petalGrad2" cx="50%" cy="35%" r="60%">
+              <stop offset="0%"   stop-color="#ff8fb3"/>
+              <stop offset="60%"  stop-color="#e91e8c"/>
+              <stop offset="100%" stop-color="#b71c6e"/>
+            </radialGradient>
+            <radialGradient id="petalGrad3" cx="50%" cy="35%" r="60%">
+              <stop offset="0%"   stop-color="#ff8fb3"/>
+              <stop offset="60%"  stop-color="#e91e8c"/>
+              <stop offset="100%" stop-color="#b71c6e"/>
+            </radialGradient>
+            <radialGradient id="petalGrad4" cx="50%" cy="38%" r="58%">
+              <stop offset="0%"   stop-color="#ff4d8b"/>
+              <stop offset="55%"  stop-color="#d81b77"/>
+              <stop offset="100%" stop-color="#ad1457"/>
+            </radialGradient>
+            <radialGradient id="petalGrad5" cx="50%" cy="38%" r="58%">
+              <stop offset="0%"   stop-color="#ff6ba8"/>
+              <stop offset="55%"  stop-color="#d81b77"/>
+              <stop offset="100%" stop-color="#9c1b5a"/>
+            </radialGradient>
+            <radialGradient id="petalGrad6" cx="50%" cy="36%" r="56%">
+              <stop offset="0%"   stop-color="#ff3d7f"/>
+              <stop offset="50%"  stop-color="#c2185b"/>
+              <stop offset="100%" stop-color="#880e4f"/>
+            </radialGradient>
+            <radialGradient id="petalGrad7" cx="50%" cy="36%" r="56%">
+              <stop offset="0%"   stop-color="#ff5c95"/>
+              <stop offset="50%"  stop-color="#c2185b"/>
+              <stop offset="100%" stop-color="#7b1244"/>
+            </radialGradient>
+            <radialGradient id="petalGradCore" cx="50%" cy="35%" r="55%">
+              <stop offset="0%"   stop-color="#ff1f6e"/>
+              <stop offset="55%"  stop-color="#b0003a"/>
+              <stop offset="100%" stop-color="#7a0026"/>
+            </radialGradient>
+            <radialGradient id="petalGradCore2" cx="50%" cy="32%" r="55%">
+              <stop offset="0%"   stop-color="#ff3975"/>
+              <stop offset="60%"  stop-color="#c2185b"/>
+              <stop offset="100%" stop-color="#880e4f"/>
+            </radialGradient>
+          </defs>
+        </svg>
+
+        <!-- วงแสง Glow รอบดอกกุหลาบ — CSS animation -->
+        <div class="rose-glow"></div>
+        <div class="rose-glow-outer"></div>
+      </div>
+
+      <!-- ข้อความฉากที่ 1 -->
+      <div class="scene-text" id="scene1Text">
+        <p class="subtitle">สำหรับเธอ</p>
+      </div>
+
+      <!-- ปุ่มรับดอกไม้ — scene 1 -->
+      <button class="neon-btn" id="btn1" onclick="goToScene2()">
+        ช่วยรับดอกไม้นี้ไว้ได้ไหม
+      </button>
+    </div>
+    <!-- /scene1 -->
+
+    <!-- ==========================================
+         SCENE 2: "เย้" พร้อม dots เพิ่มขึ้นเรื่อยๆ
+         แสดงข้อความทีละจังหวะแบบ Typewriter
+         ========================================== -->
+    <div class="scene hidden" id="scene2">
+      <div class="big-text" id="scene2Text">เย้</div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 3: "เหนื่อยไหมที่รัก..." + 2 ปุ่ม
+         ใช้ Typewriter effect พิมพ์ข้อความทีละตัวอักษร
+         ========================================== -->
+    <div class="scene hidden" id="scene3">
+      <div class="big-text" id="scene3Text"></div>
+      <div class="btn-group hidden" id="btnGroup3">
+        <button class="neon-btn btn-tired"    onclick="goToScene4A()">เหนื่อย</button>
+        <button class="neon-btn btn-nottired" onclick="goToScene4B()">ไม่เหนื่อย</button>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 4A: ":<" — ปฏิกิริยาเมื่อเลือก "เหนื่อย"
+         ========================================== -->
+    <div class="scene hidden" id="scene4a">
+      <div class="emoji-reaction" id="react4a">:<</div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 4B: ":>" — ปฏิกิริยาเมื่อเลือก "ไม่เหนื่อย"
+         ========================================== -->
+    <div class="scene hidden" id="scene4b">
+      <div class="emoji-reaction" id="react4b">:></div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 5: ดอกกุหลาบกลับมา + ปุ่ม "รับดอกไม้"
+         ========================================== -->
+    <div class="scene hidden" id="scene5">
+      <div class="rose-container" id="mainRose5">
+        <!-- ดอกกุหลาบซ้ำ — ใช้ clone จาก JS -->
+        <svg class="rose-svg" viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">
+          <use href="#roseGroup"/>
+          <path class="stem" d="M150 310 Q130 340 120 370" stroke="#2d6a2d" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path class="stem" d="M150 310 Q170 340 178 370" stroke="#2d6a2d" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse class="leaf" cx="120" cy="340" rx="18" ry="10" fill="#3a8a3a" transform="rotate(-40 120 340)"/>
+          <ellipse class="leaf" cx="178" cy="340" rx="18" ry="10" fill="#3a8a3a" transform="rotate(40 178 340)"/>
+          <ellipse class="petal petal-outer" cx="150" cy="220" rx="55" ry="75" fill="url(#petalGrad1b)" opacity="0.9"/>
+          <ellipse class="petal petal-outer" cx="100" cy="235" rx="50" ry="68" fill="url(#petalGrad2b)" opacity="0.85" transform="rotate(-35 100 235)"/>
+          <ellipse class="petal petal-outer" cx="200" cy="235" rx="50" ry="68" fill="url(#petalGrad3b)" opacity="0.85" transform="rotate(35 200 235)"/>
+          <ellipse class="petal petal-outer" cx="80"  cy="195" rx="45" ry="62" fill="url(#petalGrad2b)" opacity="0.8"  transform="rotate(-60 80 195)"/>
+          <ellipse class="petal petal-outer" cx="220" cy="195" rx="45" ry="62" fill="url(#petalGrad3b)" opacity="0.8"  transform="rotate(60 220 195)"/>
+          <ellipse class="petal petal-mid" cx="150" cy="190" rx="45" ry="62" fill="url(#petalGrad4b)" opacity="0.92"/>
+          <ellipse class="petal petal-mid" cx="112" cy="200" rx="40" ry="56" fill="url(#petalGrad5b)" opacity="0.88" transform="rotate(-30 112 200)"/>
+          <ellipse class="petal petal-mid" cx="188" cy="200" rx="40" ry="56" fill="url(#petalGrad5b)" opacity="0.88" transform="rotate(30 188 200)"/>
+          <ellipse class="petal petal-mid" cx="95"  cy="175" rx="38" ry="52" fill="url(#petalGrad4b)" opacity="0.85" transform="rotate(-55 95 175)"/>
+          <ellipse class="petal petal-mid" cx="205" cy="175" rx="38" ry="52" fill="url(#petalGrad4b)" opacity="0.85" transform="rotate(55 205 175)"/>
+          <ellipse class="petal petal-inner" cx="150" cy="165" rx="34" ry="48" fill="url(#petalGrad6b)" opacity="0.95"/>
+          <ellipse class="petal petal-inner" cx="122" cy="170" rx="30" ry="42" fill="url(#petalGrad7b)" opacity="0.9"  transform="rotate(-25 122 170)"/>
+          <ellipse class="petal petal-inner" cx="178" cy="170" rx="30" ry="42" fill="url(#petalGrad7b)" opacity="0.9"  transform="rotate(25 178 170)"/>
+          <ellipse class="petal petal-inner" cx="108" cy="152" rx="28" ry="38" fill="url(#petalGrad6b)" opacity="0.88" transform="rotate(-48 108 152)"/>
+          <ellipse class="petal petal-inner" cx="192" cy="152" rx="28" ry="38" fill="url(#petalGrad6b)" opacity="0.88" transform="rotate(48 192 152)"/>
+          <ellipse class="petal petal-core" cx="150" cy="145" rx="22" ry="30" fill="url(#petalGradCoreb)" opacity="1"/>
+          <ellipse class="petal petal-core" cx="138" cy="148" rx="16" ry="22" fill="url(#petalGradCore2b)" opacity="0.9" transform="rotate(-18 138 148)"/>
+          <ellipse class="petal petal-core" cx="162" cy="148" rx="16" ry="22" fill="url(#petalGradCore2b)" opacity="0.9" transform="rotate(18 162 148)"/>
+          <ellipse class="highlight" cx="135" cy="148" rx="8" ry="14" fill="white" opacity="0.22" transform="rotate(-10 135 148)"/>
+          <ellipse class="highlight" cx="155" cy="190" rx="6" ry="10" fill="white" opacity="0.16" transform="rotate(5 155 190)"/>
+          <defs>
+            <radialGradient id="petalGrad1b" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#ff6b9d"/><stop offset="50%" stop-color="#e91e8c"/><stop offset="100%" stop-color="#c2185b"/></radialGradient>
+            <radialGradient id="petalGrad2b" cx="50%" cy="35%" r="60%"><stop offset="0%" stop-color="#ff8fb3"/><stop offset="60%" stop-color="#e91e8c"/><stop offset="100%" stop-color="#b71c6e"/></radialGradient>
+            <radialGradient id="petalGrad3b" cx="50%" cy="35%" r="60%"><stop offset="0%" stop-color="#ff8fb3"/><stop offset="60%" stop-color="#e91e8c"/><stop offset="100%" stop-color="#b71c6e"/></radialGradient>
+            <radialGradient id="petalGrad4b" cx="50%" cy="38%" r="58%"><stop offset="0%" stop-color="#ff4d8b"/><stop offset="55%" stop-color="#d81b77"/><stop offset="100%" stop-color="#ad1457"/></radialGradient>
+            <radialGradient id="petalGrad5b" cx="50%" cy="38%" r="58%"><stop offset="0%" stop-color="#ff6ba8"/><stop offset="55%" stop-color="#d81b77"/><stop offset="100%" stop-color="#9c1b5a"/></radialGradient>
+            <radialGradient id="petalGrad6b" cx="50%" cy="36%" r="56%"><stop offset="0%" stop-color="#ff3d7f"/><stop offset="50%" stop-color="#c2185b"/><stop offset="100%" stop-color="#880e4f"/></radialGradient>
+            <radialGradient id="petalGrad7b" cx="50%" cy="36%" r="56%"><stop offset="0%" stop-color="#ff5c95"/><stop offset="50%" stop-color="#c2185b"/><stop offset="100%" stop-color="#7b1244"/></radialGradient>
+            <radialGradient id="petalGradCoreb" cx="50%" cy="35%" r="55%"><stop offset="0%" stop-color="#ff1f6e"/><stop offset="55%" stop-color="#b0003a"/><stop offset="100%" stop-color="#7a0026"/></radialGradient>
+            <radialGradient id="petalGradCore2b" cx="50%" cy="32%" r="55%"><stop offset="0%" stop-color="#ff3975"/><stop offset="60%" stop-color="#c2185b"/><stop offset="100%" stop-color="#880e4f"/></radialGradient>
+          </defs>
+        </svg>
+        <div class="rose-glow"></div>
+        <div class="rose-glow-outer"></div>
+      </div>
+      <button class="neon-btn" id="btn5" onclick="goToScene6()">รับดอกไม้</button>
+    </div>
+
+    <!-- ==========================================
+         SCENE 6: "ไม่ให้หรอก!" แล้ว "ฮ่ะๆๆ"
+         ข้อความแสดงแบบสนุกสนาน
+         ========================================== -->
+    <div class="scene hidden" id="scene6">
+      <div class="big-text teasing" id="scene6Text"></div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 7: Cinematic dots "." ".." "..."
+         หน้าจอดำ จุดปรากฏทีละตัว สร้างความตื่นเต้น
+         ========================================== -->
+    <div class="scene hidden" id="scene7">
+      <div class="cinematic-dots" id="cinematicDots">.</div>
+    </div>
+
+    <!-- ==========================================
+         SCENE 8-9-10-11-12 ENDING:
+         พื้นหลังเปลี่ยน + ดอกไม้บาน + ข้อความความรัก
+         ========================================== -->
+    <div class="scene hidden" id="sceneEnding">
+
+      <!-- ข้อความกลางจอ — เปลี่ยนผ่าน fade -->
+      <div class="ending-message" id="endingMessage"></div>
+
+      <!-- ฉากสุดท้าย: ดอกใหญ่ + แมว + หมา -->
+      <div class="final-ending hidden" id="finalEnding">
+        <div class="final-text">รักตลอดไป</div>
+        <div class="pet-icons">
+          <span class="pet-icon cat">🐱</span>
+          <span class="pet-icon dog">🐶</span>
+        </div>
+      </div>
+
+      <!-- หัวใจสุดท้าย -->
+      <div class="heart-final hidden" id="heartFinal">❤️</div>
+
+    </div>
+    <!-- /sceneEnding -->
+
+  </div>
+  <!-- /app -->
+
+  <!-- ==========================================
+       SCRIPT หลัก
+       โหลด JS ไว้ท้าย body เพื่อให้ DOM โหลดก่อน
+       ========================================== -->
+  <script src="script.js"></script>
+</body>
+</html>

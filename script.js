@@ -490,7 +490,8 @@ function animateFlowers() {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * fadeOut scene — ค่อยๆ ซ่อน scene ด้วย opacity
+ * fadeOut scene — ค่อยๆ ซ่อน scene ด้วย opacity แล้ว display:none
+ * การใช้ display:none หลัง fade ทำให้ element ไม่ซ้อนทับ scene ถัดไป
  * @param {HTMLElement} el - element ที่จะ fade out
  * @param {number} dur - ระยะเวลา ms
  */
@@ -500,9 +501,11 @@ function fadeOut(el, dur = 800) {
     el.style.opacity = '0';
     el.style.pointerEvents = 'none';
     setTimeout(() => {
-      el.classList.add('hidden');
+      // ซ่อนด้วย display:none จริงๆ — ป้องกัน overlap กับ scene ถัดไป
+      el.style.display = 'none';
       el.style.opacity = '';
       el.style.transition = '';
+      el.classList.add('hidden');
       resolve();
     }, dur);
   });
@@ -510,15 +513,19 @@ function fadeOut(el, dur = 800) {
 
 /**
  * fadeIn scene — ค่อยๆ แสดง scene ด้วย opacity
+ * reset display ก่อนเพื่อให้ element กลับมาแสดงได้
  * @param {HTMLElement} el - element ที่จะ fade in
  * @param {number} dur - ระยะเวลา ms
  */
 function fadeIn(el, dur = 800) {
   return new Promise(resolve => {
+    // คืนค่า display ก่อน (ล้าง display:none ที่ fadeOut ทิ้งไว้)
+    el.style.display = '';
     el.classList.remove('hidden');
     el.style.opacity = '0';
     el.style.transition = `opacity ${dur}ms ease`;
-    // รอ 1 frame ให้ browser รับรู้การเปลี่ยนแปลง
+    el.style.pointerEvents = '';
+    // รอ 2 frame ให้ browser รับรู้ก่อน animate
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         el.style.opacity = '1';
@@ -585,11 +592,15 @@ function typewriter(el, text, speed = 80, showCursor = true) {
  * กดปุ่ม "ช่วยรับดอกไม้นี้ไว้ได้ไหม"
  */
 async function goToScene2() {
-  const s1 = document.getElementById('scene1');
-  const s2 = document.getElementById('scene2');
+  const s1  = document.getElementById('scene1');
+  const s2  = document.getElementById('scene2');
+  const btn = document.getElementById('btn1');
   const textEl = document.getElementById('scene2Text');
 
-  // Fade out scene 1
+  // ปิดปุ่มทันทีเพื่อป้องกันกดซ้ำ
+  if (btn) btn.disabled = true;
+
+  // Fade out scene 1 ทั้งหมด (รวมปุ่มด้วย)
   await fadeOut(s1, 900);
 
   // Fade in scene 2
@@ -656,6 +667,9 @@ async function goToScene4A() {
   const s4a   = document.getElementById('scene4a');
   const react = document.getElementById('react4a');
 
+  // ปิดปุ่มทั้งคู่ทันที
+  document.querySelectorAll('#btnGroup3 button').forEach(b => b.disabled = true);
+
   await fadeOut(s3, 700);
   await fadeIn(s4a, 600);
 
@@ -678,6 +692,9 @@ async function goToScene4B() {
   const s3    = document.getElementById('scene3');
   const s4b   = document.getElementById('scene4b');
   const react = document.getElementById('react4b');
+
+  // ปิดปุ่มทั้งคู่ทันที
+  document.querySelectorAll('#btnGroup3 button').forEach(b => b.disabled = true);
 
   await fadeOut(s3, 700);
   await fadeIn(s4b, 600);
@@ -705,9 +722,13 @@ async function goToScene5(prevScene) {
  * SCENE 6: กด "รับดอกไม้" → "ไม่ให้หรอก!" → "ฮ่ะๆๆ"
  */
 async function goToScene6() {
-  const s5    = document.getElementById('scene5');
-  const s6    = document.getElementById('scene6');
+  const s5     = document.getElementById('scene5');
+  const s6     = document.getElementById('scene6');
+  const btn5   = document.getElementById('btn5');
   const textEl = document.getElementById('scene6Text');
+
+  // ปิดปุ่มทันที ป้องกันกดซ้ำ
+  if (btn5) btn5.disabled = true;
 
   await fadeOut(s5, 700);
   await fadeIn(s6, 600);
